@@ -63,13 +63,12 @@ ENV HOME=/home/$USER \
     DEBIAN_FRONTEND=noninteractive \
     VNC_COL_DEPTH=24 \
     VNC_RESOLUTION=1920x1080 \
-    VNC_PW=$VNCPASSWD \
     VNC_VIEW_ONLY=false
 WORKDIR $HOME
 
 ## Add all install scripts for further steps
-ADD ./src/common/install/ $INST_SCRIPTS/
-ADD ./src/ubuntu/install/ $INST_SCRIPTS/
+ADD ./novnc/common/install/ $INST_SCRIPTS/
+ADD ./novnc/ubuntu/install/ $INST_SCRIPTS/
 RUN find $INST_SCRIPTS -name '*.sh' -exec chmod a+x {} +
 
 ## Install some common tools
@@ -86,11 +85,11 @@ RUN $INST_SCRIPTS/chrome.sh
 
 ## Install xfce UI
 RUN $INST_SCRIPTS/xfce_ui.sh
-ADD ./src/common/xfce/ $HOME/
+ADD ./novnc/common/xfce/ $HOME/
 
 ## configure startup
 RUN $INST_SCRIPTS/libnss_wrapper.sh
-ADD ./src/common/scripts $STARTUPDIR
+ADD ./novnc/common/scripts $STARTUPDIR
 RUN $INST_SCRIPTS/set_user_permission.sh $STARTUPDIR $HOME
 
 
@@ -105,9 +104,13 @@ RUN apt-get update && \
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial main" > \
                 /etc/apt/sources.list.d/ros-latest.list' && \
     apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116 && \
-    apt-get update && apt-get install -y ros-kinetic-desktop && \
-    apt-get install -y python-rosinstall && \
+    apt-get update && apt-get install -y --allow-unauthenticated ros-kinetic-desktop python-rosinstall && \
     rosdep init
+
+RUN apt-key del 421C365BD9FF1F717815A3895523BAEEB01FA116
+RUN  apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+RUN apt clean && apt update \
+   && apt-get install -y ros-kinetic-image-transport-plugins
 
 # Install Gazebo
 RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list' && \
@@ -121,6 +124,7 @@ USER $USER
 RUN rosdep fix-permissions && rosdep update
 RUN echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc
 RUN /bin/bash -c "source ~/.bashrc"
+
 
 ###Tensorflow Installation
 # Install pip
@@ -145,3 +149,5 @@ USER $USER
 
 ENTRYPOINT ["/dockerstartup/vnc_startup.sh"]
 CMD ["--wait"]
+
+
