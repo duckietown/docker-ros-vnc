@@ -5,13 +5,14 @@ ARG ROS_DISTRO=kinetic
 ARG BASE_TAG=${MAJOR}
 
 # define base image
-FROM duckietown/dt-ros-${ROS_DISTRO}-base:${BASE_TAG}
+FROM duckietown/dt-ros-commons:${BASE_TAG}-amd64
 
 # install apt dependencies
-RUN apt-get update && \
-    apt-get install -y ros-${ROS_DISTRO}-rviz \
+RUN apt-get autoclean && apt-get clean && apt-get autoremove &&  apt-get update
+RUN apt-get install -y ros-${ROS_DISTRO}-rviz \
                        ros-${ROS_DISTRO}-rqt \
-                       ros-${ROS_DISTRO}-rqt-common-plugins
+                       ros-${ROS_DISTRO}-rqt-common-plugins \
+                       ros-${ROS_DISTRO}-image-transport-plugins
 
 # Configure user
 ARG user=ros
@@ -84,7 +85,7 @@ ADD ./src/common/scripts $STARTUPDIR
 RUN $INST_SCRIPTS/set_user_permission.sh $STARTUPDIR $HOME
 
 RUN echo 'source /opt/ros/${ROS_DISTRO}/setup.bash' >> ~/.bashrc
-
+RUN echo 'source /code/catkin_ws/devel/setup.bash' >> ~/.bashrc
 
 ENTRYPOINT ["/dockerstartup/vnc_startup.sh"]
 CMD ["--wait"]
